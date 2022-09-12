@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+commonLabels:
+  app: pod_with_service
+resources:
+- pod1.yaml
+- pod2.yaml
+- service.yaml
