@@ -23,13 +23,7 @@ teardown() {
 }
 
 @test "service binds endpoint" {
-	timeout "${KUBE_LONG_TIMEOUT}" sh -c '
-		while ! ${KUBECTL} -n "$TARGET_NAMESPACE" wait \
-				--for=jsonpath='{.subsets[0].ports[0].port}'=8080 \
-				endpoints/test-pod; do
-			sleep 1
-		done
-	'
+	wait_for --for=jsonpath='{.subsets[0].ports[0].port}'=8080 endpoints/test-pod
 }
 
 @test "service accessible at route" {

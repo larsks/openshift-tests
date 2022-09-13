@@ -22,6 +22,5 @@ setup() {
 }
 
 @test "clusterversion is available" {
-	${KUBECTL} -n "$TARGET_NAMESPACE" wait --for=condition=available \
-		--timeout=5 clusterversion version
+	wait_for --for=condition=Available clusterversion/version
 }
