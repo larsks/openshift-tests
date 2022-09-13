@@ -23,9 +23,9 @@ teardown() {
 external_secret_common() {
 	${KUBECTL} -n "$TARGET_NAMESPACE" wait \
 		--for=condition=Ready \
-		--timeout=30s \
+		--timeout="${KUBE_LONG_TIMEOUT}s" \
 		externalsecret/test-secret
-	timeout 30 sh -c '
+	timeout "${KUBE_LONG_TIMEOUT}" sh -c '
 		while ! ${KUBECTL} -n "$TARGET_NAMESPACE" get secret test-secret; do
 			sleep 1
 		done

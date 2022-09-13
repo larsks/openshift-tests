@@ -23,7 +23,7 @@ teardown() {
 }
 
 @test "service binds endpoint" {
-	timeout 30 sh -c '
+	timeout "${KUBE_LONG_TIMEOUT}" sh -c '
 		while ! ${KUBECTL} -n "$TARGET_NAMESPACE" wait \
 				--for=jsonpath='{.subsets[0].ports[0].port}'=8080 \
 				endpoints/test-pod; do
@@ -37,7 +37,7 @@ teardown() {
 		${KUBECTL} -n "$TARGET_NAMESPACE" \
 		get route test-pod -o jsonpath='{.spec.host}'
 	)
-	timeout 30 sh -c  '
+	timeout "${KUBE_LONG_TIMEOUT}" sh -c  '
 		while ! curl -sf -o /dev/null $1; do
 			sleep 1
 		done
