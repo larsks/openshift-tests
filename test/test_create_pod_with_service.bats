@@ -32,7 +32,7 @@ teardown() {
 		get route test-pod -o jsonpath='{.spec.host}'
 	)
 	timeout "${KUBE_LONG_TIMEOUT}" sh -c  '
-		while ! curl -sf -o /dev/null $1; do
+		while ! curl --no-progress-meter -f -o /dev/null $1; do
 			sleep 1
 		done
 	' -- "$hostname"
