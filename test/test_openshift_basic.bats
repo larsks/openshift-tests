@@ -16,7 +16,7 @@ setup() {
 	diff -u /dev/null \
 		<(
 			${KUBECTL} get --no-headers pod -A  |
-			grep openshift- |
+			awk '$1 ~ /^openshift/ {print}' |
 			grep -Ev "Running|Completed"
 		)
 }
