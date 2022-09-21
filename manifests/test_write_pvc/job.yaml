@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test-job
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - image: docker.io/alpine:latest
+          name: test-container
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              date > /mnt/testfile
+              sync
+          volumeMounts:
+            - name: test-volume
+              mountPath: /mnt
+      volumes:
+        - name: test-volume
+          persistentVolumeClaim:
+            claimName: test-volume
