@@ -1,6 +1,5 @@
-# Test basic OpenShift functionality: Can we perform simple API operations
-# like listing namespaces? Are there any failed pods? Is the ClusterVersion
-# resource `Available`? Etc.
+# Test basic OpenShift functionality: Can we perform simple API operations like
+# listing namespaces? Is the ClusterVersion resource healthy?
 
 setup() {
 	load 'lib/bats-support/load'
@@ -10,15 +9,6 @@ setup() {
 
 @test "can get default namespace" {
 	${KUBECTL} get ns default
-}
-
-@test "no openshift pods are failing" {
-	diff -u /dev/null \
-		<(
-			${KUBECTL} get --no-headers pod -A  |
-			awk '$1 ~ /^openshift/ {print}' |
-			grep -Ev "Running|Completed"
-		)
 }
 
 @test "clusterversion is available" {
