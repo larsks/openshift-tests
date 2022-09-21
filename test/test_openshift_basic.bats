@@ -22,5 +22,10 @@ setup() {
 }
 
 @test "clusterversion is available" {
-	wait_for --for=condition=Available clusterversion/version
+	${KUBECTL} get clusterversion/version \
+		-o jsonpath='{.status.conditions[?(@.type=="Available")].status}' |
+	grep -q True
+	${KUBECTL} get clusterversion/version \
+		-o jsonpath='{.status.conditions[?(@.type=="Failing")].status}' |
+	grep -q False
 }
