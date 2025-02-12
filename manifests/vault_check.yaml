@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: "vault-check-{{ testid }}"
+  labels:
+    app: "vault-check"
+    testid: "{{ testid }}"
+spec:
+  selector:
+    matchLabels:
+      app: "vault-check"
+      testid: "{{ testid }}"
+  template:
+    metadata:
+      labels:
+        app: "vault-check"
+        testid: "{{ testid }}"
+    spec:
+      containers:
+      - name: check
+        image: "{{ testimage }}"
+        readinessProbe:
+          exec:
+            command:
+            - curl
+            - -SsfL
+            - "{{ url }}"
+          initialDelaySeconds: 1
+          periodSeconds: 5
+      tolerations:
+      - effect: NoSchedule
+        key: nvidia.com/gpu.product
+        operator: Exists

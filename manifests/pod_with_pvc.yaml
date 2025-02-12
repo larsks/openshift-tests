@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod-{{testid}}
+spec:
+  containers:
+  - image: "{{ testimage }}"
+    imagePullPolicy: Always
+    name: test-container
+    volumeMounts:
+    - mountPath: /mnt
+      name: test-volume
+  volumes:
+  - name: test-volume
+    persistentVolumeClaim:
+      claimName: test-volume-{{testid}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-volume-{{testid}}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
