@@ -59,7 +59,7 @@ def main():
     with open(args.results) as fd:
         data = fd.read()
 
-    results = xmltodict.parse(data)
+    results = xmltodict.parse(data, force_list=['testcase', 'property'])
 
     with open(args.output, "w") if args.output else sys.stdout as fd:
         fd.write(tmpl.render(testsuite=results["testsuites"]["testsuite"], only_failures=args.only_failures))
