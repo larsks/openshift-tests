@@ -10,16 +10,26 @@ def check_default_storage_class(kube):
     """Fail if no default storage class, since we required that for all the
     volume storage tests"""
     storage_classes = kube.get("storage.k8s.io/v1", "StorageClass")
-    if not any(
-        sc.metadata.annotations["storageclass.kubernetes.io/is-default-class"] == "true"
-        for sc in storage_classes.items
-    ):
+    default_sc = next(
+        (
+            sc
+            for sc in storage_classes.items
+            if sc.metadata.annotations["storageclass.kubernetes.io/is-default-class"]
+            == "true"
+        ),
+        0,
+    )
+    if not default_sc:
         pytest.fail("This cluster does not have a default storage class")
 
+    return default_sc
 
-def test_create_pvc(kube, pvc):
+
+def test_create_pvc(kube, pvc, record_property):
     """Test if we can create a PVC"""
-    check_default_storage_class(kube)
+    record_property(
+        "default_storage_class", check_default_storage_class(kube).metadata.name
+    )
     kube.wait_for_jsonpath(pvc[0], "status.phase", "Pending")
     _pvc = kube.refresh(pvc[0])
     scname = _pvc.spec.storageClassName

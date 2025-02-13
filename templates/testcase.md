@@ -2,4 +2,13 @@
 {% if testcase|message %}
   {{ testcase|message|wordwrap(75)|indent(2) }}
 {% endif %}
+{% if testcase.get('properties', {}).get('property') %}
+
+  | Property | Value |
+  |----------|-------|
+{% for property in testcase['properties'].get('property', []) %}
+  | {{ property['@name'] }} | {{ property['@value'] }} |
+{% endfor %}
+{% endif %}
+
 
