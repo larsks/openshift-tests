@@ -3,7 +3,7 @@
 
   {{ testcase|message|wordwrap(75)|indent(2) }}
 {% endif %}
-{% if testcase.get('properties', {}).get('property') %}
+{% if show_properties and testcase.get('properties', {}).get('property') %}
 
   | Property | Value |
   |----------|-------|
