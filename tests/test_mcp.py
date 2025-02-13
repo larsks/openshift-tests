@@ -1,4 +1,6 @@
+import pytest
 from tests.helpers import assert_conditions
+from tests.helpers import ResourceNotFoundError
 
 
 def test_mcp(kube):
@@ -10,7 +12,10 @@ def test_mcp(kube):
         "Updated": "True",
         "Updating": "False",
     }
-    pools = kube.get("machineconfiguration.openshift.io/v1", "MachineConfigPool")
+    try:
+        pools = kube.get("machineconfiguration.openshift.io/v1", "MachineConfigPool")
+    except ResourceNotFoundError:
+        pytest.skip("This cluster does not have MachineConfigPools.")
     for pool in pools.items:
         assert_conditions(pool, conditionMap)
 

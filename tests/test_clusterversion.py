@@ -1,4 +1,6 @@
+import pytest
 from tests.helpers import assert_conditions
+from tests.helpers import ResourceNotFoundError
 
 
 def test_clusterversion(kube, record_property):
@@ -12,7 +14,10 @@ def test_clusterversion(kube, record_property):
         "Progressing": "False",
         "Upgradeable": "True",
     }
-    cv = kube.get("config.openshift.io/v1", "ClusterVersion", "version")
+    try:
+        cv = kube.get("config.openshift.io/v1", "ClusterVersion", "version")
+    except ResourceNotFoundError:
+        pytest.skip("This cluster does not have a clusterversion resource.")
 
     record_property("channel", cv.spec.channel)
     record_property("version", cv.status.history[0].version)

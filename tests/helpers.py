@@ -5,6 +5,7 @@ import yaml
 from kubernetes import client, config, dynamic
 from pytest import fixture
 
+from kubernetes.dynamic.exceptions import ResourceNotFoundError
 
 class KubeHelper:
     """This is a help class that makes interacting with the kubernetes dynamic api somewhat easier"""

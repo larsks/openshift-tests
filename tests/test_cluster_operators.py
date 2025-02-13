@@ -1,4 +1,6 @@
+import pytest
 from tests.helpers import assert_conditions
+from tests.helpers import ResourceNotFoundError
 
 
 def test_cluster_operators(kube):
@@ -9,6 +11,9 @@ def test_cluster_operators(kube):
         "Available": "True",
         "Upgradeable": "True",
     }
-    ops = kube.get("config.openshift.io/v1", "ClusterOperator")
+    try:
+        ops = kube.get("config.openshift.io/v1", "ClusterOperator")
+    except  ResourceNotFoundError:
+        pytest.skip("This cluster does not have cluster operators.")
     for op in ops.items:
         assert_conditions(op, conditionMap)

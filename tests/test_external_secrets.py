@@ -3,7 +3,9 @@ import time
 
 import pytest
 
-from tests.helpers import assert_conditions, make_template_fixture
+from tests.helpers import assert_conditions
+from tests.helpers import make_template_fixture
+from tests.helpers import ResourceNotFoundError
 
 vault_check = make_template_fixture(
     "vault_check", url="https://vault-ui-vault.apps.nerc-ocp-infra.rc.fas.harvard.edu"
@@ -13,6 +15,14 @@ vault_check = make_template_fixture(
 def test_vault_access(kube, vault_check, testid):
     """Test that all pods can reach the vault."""
     nodes = kube.get("v1", "Node", label_selector="node-role.kubernetes.io/worker")
+    if not nodes.items:
+        nodes = kube.get("v1", "Node", label_selector="node-role.kubernetes.io/control-plane")
+    if not nodes.items:
+        nodes = kube.get("v1", "Node", label_selector="node-role.kubernetes.io/master")
+
+    if not nodes.items:
+        pytest.skip("This cluster has no nodes.")
+
 
     # Wait for the daemonset to create the pods
     t_start = time.time()
@@ -48,7 +58,10 @@ def test_vault_access(kube, vault_check, testid):
 
 def test_secretstores(kube):
     """Test that SecretStores are healthy"""
-    stores = kube.get("external-secrets.io/v1beta1", "SecretStore", all_namespaces=True)
+    try:
+        stores = kube.get("external-secrets.io/v1beta1", "SecretStore", all_namespaces=True)
+    except ResourceNotFoundError:
+        pytest.skip("This cluster does not have external secrets.")
     if not stores.items:
         pytest.skip("There are no SecretStore resources")
     for store in stores.items:
@@ -57,9 +70,10 @@ def test_secretstores(kube):
 
 def test_clustersecretstores(kube):
     """Test that ClusterSecretStores are healthy"""
-    stores = kube.get(
-        "external-secrets.io/v1beta1", "ClusterSecretStore", all_namespaces=True
-    )
+    try:
+        stores = kube.get("external-secrets.io/v1beta1", "ClusterSecretStore")
+    except ResourceNotFoundError:
+        pytest.skip("This cluster does not have external secrets.")
     if not stores.items:
         pytest.skip("There are no ClusterSecretStore resources")
     for store in stores.items:
