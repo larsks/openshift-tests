@@ -4,7 +4,7 @@ import sys
 import jinja2
 import xmltodict
 
-env = jinja2.Environment(loader=jinja2.FileSystemLoader("templates"))
+env = jinja2.Environment(loader=jinja2.FileSystemLoader("templates"), trim_blocks=True)
 
 
 def filter(func):
