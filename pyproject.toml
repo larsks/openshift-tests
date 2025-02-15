@@ -16,4 +16,4 @@ dependencies = [
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--tb=line -v --junitxml=testresults.xml"
+addopts = "--tb=line -v --junitxml=testresults.xml -W 'ignore:record_property is incompatible with junit_family:pytest.PytestWarning'"
