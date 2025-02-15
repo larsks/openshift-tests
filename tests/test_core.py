@@ -1,9 +1,9 @@
-from tests.helpers import make_template_fixture
+from tests.helpers import make_resource_fixture
 
-pod = make_template_fixture("pod")
-pod_with_service = make_template_fixture("pod_with_service")
-two_pods_talking = make_template_fixture("two_pods_talking")
-job_check_url = make_template_fixture("job_check_url", url="https://www.google.com")
+pod = make_resource_fixture("pod")
+pod_with_service = make_resource_fixture("pod_with_service")
+two_pods_talking = make_resource_fixture("two_pods_talking")
+job_check_url = make_resource_fixture("job_check_url", url="https://www.google.com")
 
 
 def test_create_pod(kube, pod):

@@ -2,10 +2,27 @@ import time
 
 import jsonpath_ng as jsonpath
 import yaml
-from kubernetes import client, config, dynamic
-from pytest import fixture
+from kubernetes import client, dynamic
+import pytest
 
-from kubernetes.dynamic.exceptions import ResourceNotFoundError
+from kubernetes.dynamic.exceptions import ResourceNotFoundError  # noqa
+
+
+class ObjectManager:
+    def __init__(self, kube, specs):
+        self.kube = kube
+        self.specs = specs
+        self.objects = self.kube.create_objects(self.specs)
+
+    def __getitem__(self, i):
+        return self.objects[i]
+
+    def __enter__(self):
+        return self.objects
+
+    def __exit__(self, *args):
+        self.kube.delete_objects(self.objects)
+
 
 class KubeHelper:
     """This is a help class that makes interacting with the kubernetes dynamic api somewhat easier"""
@@ -91,33 +108,75 @@ class KubeHelper:
 
             if time.time() - t_start > timeout:
                 raise TimeoutError(
-                    f'expression {expr} for {obj.kind} "{obj.metadata.name}" failed to reach value {value}'
+                    f'expression {expr} for {obj.kind} "{obj.metadata.name}" failed to reach value {value}',
+                    obj,
                 )
 
             time.sleep(1)
 
         return obj
 
+    def wait_for_n_objects(self, api_version, kind, count, timeout=30, **kwargs):
+        t_start = time.time()
+        while True:
+            objs = self.get(api_version, kind, **kwargs)
+            if len(objs.items) == count:
+                return objs
 
-def make_template_fixture(basename, **kwargs):
-    """Read a jinja template from the `manifests/<basename>.yaml` file, render
-    the template, and then create all the objects described in the manifest.
-    The template will always receive values for `testid` and `testimage`; if
-    you provide any additional values in `kwargs`, they will be provided to the
-    template.
+            if time.time() - t_start > timeout:
+                raise TimeoutError(
+                    f'expected {count} objects of type {kind}, but found {len(objs.items)}'
+                )
 
-    When the test is complete, delete all the objects that we created."""
+    def get_worker_nodes(self):
+        nodes = self.get("v1", "Node", label_selector="node-role.kubernetes.io/worker")
+        if not nodes.items:
+            nodes = self.get(
+                "v1", "Node", label_selector="node-role.kubernetes.io/control-plane"
+            )
+        if not nodes.items:
+            nodes = self.get(
+                "v1", "Node", label_selector="node-role.kubernetes.io/master"
+            )
+
+        return nodes.items
+
+
+def make_template_fixture(basename):
+    """Given a template name, return a function that, when called, will render
+    the template (passing in any keyword parameters), create the corresponding
+    objects in Kubernetes, and return an ObjectManager for the resulting
+    objects."""
+
+    def func(kube, manifests, testid, testimage):
+        def render_template(**kwargs):
+            tmpl = manifests.get_template(f"{basename}.yaml")
+            return ObjectManager(
+                kube,
+                yaml.safe_load_all(
+                    tmpl.render(testid=testid, testimage=testimage, **kwargs)
+                ),
+            )
+
+        return render_template
+
+    return pytest.fixture(func)
+
+
+def make_resource_fixture(basename, **kwargs):
+    """Given a template name, render the template, create the corresponding
+    objects, and return an ObjectManager for the objects."""
 
     def func(kube, manifests, testid, testimage):
         template = manifests.get_template(f"{basename}.yaml")
-        specs = yaml.safe_load_all(
-            template.render(testid=testid, testimage=testimage, **kwargs)
+        return ObjectManager(
+            kube,
+            yaml.safe_load_all(
+                template.render(testid=testid, testimage=testimage, **kwargs)
+            ),
         )
-        objects = kube.create_objects(specs)
-        yield objects
-        kube.delete_objects(objects)
 
-    return fixture(func)
+    return pytest.fixture(func)
 
 
 def assert_conditions(obj, conditionMap):

@@ -1,9 +1,9 @@
 import pytest
 
-from tests.helpers import make_template_fixture
+from tests.helpers import make_resource_fixture
 
-pod_with_pvc = make_template_fixture("pod_with_pvc")
-pvc = make_template_fixture("pvc")
+pod_with_pvc = make_resource_fixture("pod_with_pvc")
+pvc = make_resource_fixture("pvc")
 
 
 def check_default_storage_class(kube):
@@ -45,3 +45,6 @@ def test_create_pod_with_pvc(kube, pod_with_pvc):
     check_default_storage_class(kube)
     pod = pod_with_pvc[0]
     kube.wait_for_jsonpath(pod, "status.phase", "Running")
+
+def test_create_pod_per_node_with_pvc(kube, pod_with_pvc):
+    pass
