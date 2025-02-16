@@ -9,6 +9,9 @@ gpu_workload = make_template_fixture("gpu_workload")
 @pytest.mark.allnodes
 def test_gpu_vectoradd(kube, gpu_workload, record_property):
     nodes = kube.get('v1', 'Node', label_selector="nvidia.com/gpu.present=true")
+    if not nodes.items:
+        pytest.skip('This cluster has no GPU nodes.')
+
     specs = []
     for node in nodes.items:
         specs.extend(list(gpu_workload(node=node.metadata.name)))
