@@ -66,6 +66,12 @@ class KubeHelper:
         rsrc = self.resource_for_obj(spec)
         return self.dynclient.create(rsrc, body=spec, namespace=self.namespace)
 
+    def delete_gkv(self, api_version, kind, namespace=None, **kwargs):
+        if namespace is None:
+            namespace = self.namespace
+        rsrc = self.dynclient.resources.get(api_version=api_version, kind=kind)
+        return self.dynclient.delete(rsrc, namespace=namespace, **kwargs)
+
     def delete(self, obj):
         """Delete the given object."""
         rsrc = self.resource_for_obj(obj)
