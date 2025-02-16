@@ -2,10 +2,9 @@ import concurrent.futures
 
 import pytest
 
+from tests.helpers import ResourceNotFoundError
 from tests.helpers import assert_conditions
 from tests.helpers import make_template_fixture
-from tests.helpers import ResourceNotFoundError
-from tests.helpers import ObjectManager
 
 vault_check = make_template_fixture("vault_check")
 
@@ -29,6 +28,7 @@ def discover_vault_urls(kube):
     return urls
 
 
+@pytest.mark.allnodes
 def test_vault_access(kube, vault_check, testid, record_property):
     """Test that all pods can reach the vault."""
     urls = discover_vault_urls(kube)
@@ -40,10 +40,16 @@ def test_vault_access(kube, vault_check, testid, record_property):
         pytest.skip("This cluster has no nodes.")
 
     for url in urls:
-        with vault_check(url=url):
+        with kube.manage(vault_check(url=url)):
             # wait for number of pods == number of nodes
             try:
-                pods = kube.wait_for_n_objects("v1", "Pod", len(nodes), timeout=10, label_selector=f"app=vault-check,testid={testid}")
+                pods = kube.wait_for_n_objects(
+                    "v1",
+                    "Pod",
+                    len(nodes),
+                    timeout=10,
+                    label_selector=f"app=vault-check,testid={testid}",
+                )
             except TimeoutError as err:
                 pytest.fail(str(err))
 
@@ -75,7 +81,7 @@ def test_vault_access(kube, vault_check, testid, record_property):
                 pytest.fail("Some pods were unable to reach the vault.")
 
 
-def test_secretstores(kube):
+def test_secretstores(kube, record_property):
     """Test that SecretStores are healthy"""
     try:
         stores = kube.get(
@@ -86,10 +92,18 @@ def test_secretstores(kube):
     if not stores.items:
         pytest.skip("There are no SecretStore resources")
     for store in stores.items:
+        record_property(
+            f"{store.metadata.namespace}:{store.metadata.name}",
+            next(
+                condition.status
+                for condition in store.status.conditions
+                if condition.type == "Ready"
+            ),
+        )
         assert_conditions(store, {"Ready": "True"})
 
 
-def test_clustersecretstores(kube):
+def test_clustersecretstores(kube, record_property):
     """Test that ClusterSecretStores are healthy"""
     try:
         stores = kube.get("external-secrets.io/v1beta1", "ClusterSecretStore")
@@ -98,4 +112,12 @@ def test_clustersecretstores(kube):
     if not stores.items:
         pytest.skip("There are no ClusterSecretStore resources")
     for store in stores.items:
+        record_property(
+            f"{store.metadata.name}",
+            next(
+                condition.status
+                for condition in store.status.conditions
+                if condition.type == "Ready"
+            ),
+        )
         assert_conditions(store, {"Ready": "True"})
