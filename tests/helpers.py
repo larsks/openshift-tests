@@ -116,19 +116,28 @@ class KubeHelper:
         return obj
 
     def wait_for_jsonpath_all(self, objects, expr_raw, value, timeout=30):
+        okay = []
+        failed = []
         with concurrent.futures.ThreadPoolExecutor() as pool:
-            tasks = [
+            tasks = {
                 pool.submit(
                     self.wait_for_jsonpath,
                     obj,
                     expr_raw,
                     value,
-                )
+                    timeout=timeout,
+                ): obj
                 for obj in objects
-            ]
+            }
 
             for task in concurrent.futures.as_completed(tasks):
-                task.result()
+                try:
+                    task.result()
+                    okay.append(tasks[task])
+                except TimeoutError:
+                    failed.append(tasks[task])
+
+        return okay, failed
 
     def wait_for_n_objects(self, api_version, kind, count, timeout=30, **kwargs):
         """Poll until there are count kind objects, or until we exceed the timeout"""

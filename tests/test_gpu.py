@@ -16,29 +16,10 @@ def test_gpu_vectoradd(kube, gpu_workload, record_property):
     for node in nodes.items:
         specs.extend(list(gpu_workload(node=node.metadata.name)))
 
-    with kube.manage(specs) as objects, concurrent.futures.ThreadPoolExecutor() as pool:
-        tasks = []
-        failed = 0
-        for obj in objects:
-            tasks.append(
-                pool.submit(
-                    kube.wait_for_jsonpath,
-                    obj,
-                    "status.phase",
-                    "Succeeded",
-                    timeout=120,
-                )
-            )
+    with kube.manage(specs) as objects:
+        okay, failed = kube.wait_for_jsonpath_all(objects, "status.phase", "Succeeded")
 
-        for task in concurrent.futures.as_completed(tasks):
-            # If kube.wait_for_jsonpath raised an exception, it
-            # will be visible here.
-            try:
-                task.result()
-            except TimeoutError as err:
-                msg, pod = err.args
-                record_property(pod.metadata.name, "failed")
-                failed += 1
-
-    if failed > 0:
-        pytest.fail("Some pods failed to run the GPU workload.")
+    if failed:
+        for pod in failed:
+            record_property(f"{pod.metadata.name} on {pod.spec.nodeName}", "failed")
+        pytest.fail("Some pods were unable to run the GPU workload.")

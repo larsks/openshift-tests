@@ -1,5 +1,3 @@
-import concurrent.futures
-
 import pytest
 
 from tests.helpers import ResourceNotFoundError
@@ -51,9 +49,16 @@ def test_vault_access(kube, vault_check, testid, worker_nodes, record_property):
                 label_selector=f"app=openshift-tests,testid={testid},testname=test_vault_access",
             )
 
-            kube.wait_for_jsonpath_all(
+            okay, failed = kube.wait_for_jsonpath_all(
                 pods.items, "status.containerStatuses[0].ready", True
             )
+
+            if failed:
+                for pod in failed:
+                    record_property(
+                        f"{pod.metadata.name} on {pod.spec.nodeName}", "failed"
+                    )
+                pytest.fail("Some pods were unable to connect to the vault.")
 
 
 def test_secretstores(kube, record_property):
