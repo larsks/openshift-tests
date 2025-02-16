@@ -90,6 +90,7 @@ def pytest_configure(config):
         "markers", "cluster_admin: tests that require cluster admin privileges"
     )
     config.addinivalue_line("markers", "allnodes: tests that spawn pods on all nodes")
+    config.addinivalue_line("markers", "gpu: tests that require gpu hardware")
 
 
 def pytest_collection_modifyitems(config, items):
