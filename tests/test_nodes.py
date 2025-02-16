@@ -1,14 +1,21 @@
+import pytest
 from tests.helpers import assert_conditions
 
 
-def test_all_nodes(kube, record_property):
+def test_all_nodes(kube, all_nodes, record_property):
     conditionMap = {
         "MemoryPressure": "False",
         "DiskPressure": "False",
         "PIDPressure": "False",
         "Ready": "True",
     }
-    nodes = kube.get("v1", "Node")
-    record_property("node_count", len(nodes.items))
-    for node in nodes.items:
-        assert_conditions(node, conditionMap)
+    failed = 0
+    for node in all_nodes:
+        try:
+            assert_conditions(node, conditionMap)
+        except AssertionError as err:
+            record_property(f"{node.metadata.name}", str(err))
+            failed += 1
+
+    if failed:
+        pytest.fail("Some nodes were unhealthy.")

@@ -65,6 +65,16 @@ def kube(testid, namespace, kubeconfig):
     return KubeHelper(testid, namespace=namespace)
 
 
+@fixture
+def all_nodes(kube):
+    return kube.get("v1", "Node").items
+
+
+@fixture
+def worker_nodes(kube):
+    return kube.get_worker_nodes()
+
+
 def pytest_addoption(parser):
     """Add custom command line options"""
     parser.addoption(

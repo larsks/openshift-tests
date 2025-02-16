@@ -50,10 +50,9 @@ def test_create_pod_with_pvc(kube, pod_with_pvc):
 
 
 @pytest.mark.allnodes
-def test_create_pod_per_node_with_pvc(kube, pvc_per_node, record_property):
-    nodes = kube.get_worker_nodes()
+def test_create_pod_per_node_with_pvc(kube, pvc_per_node, worker_nodes, record_property):
     specs = []
-    for node in nodes:
+    for node in worker_nodes:
         specs.extend(list(pvc_per_node(node=node.metadata.name)))
 
     with kube.manage(specs) as objects, concurrent.futures.ThreadPoolExecutor() as pool:

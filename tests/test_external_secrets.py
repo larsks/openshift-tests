@@ -31,14 +31,13 @@ def discover_vault_urls(kube):
 
 
 @pytest.mark.allnodes
-def test_vault_access(kube, vault_check, testid, record_property):
+def test_vault_access(kube, vault_check, testid, worker_nodes, record_property):
     """Test that all pods can reach the vault."""
     urls = discover_vault_urls(kube)
     if not urls:
         pytest.skip("This cluster does not use Vault for external secrets.")
 
-    nodes = kube.get_worker_nodes()
-    if not nodes:
+    if not worker_nodes:
         pytest.skip("This cluster has no nodes.")
 
     for url in urls:
@@ -48,7 +47,7 @@ def test_vault_access(kube, vault_check, testid, record_property):
                 pods = kube.wait_for_n_objects(
                     "v1",
                     "Pod",
-                    len(nodes),
+                    len(worker_nodes),
                     timeout=10,
                     label_selector=f"app=openshift-tests,testid={testid},testname=test_vault_access",
                 )
