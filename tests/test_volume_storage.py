@@ -1,9 +1,11 @@
+import concurrent.futures
 import pytest
 
-from tests.helpers import make_resource_fixture
+from tests.helpers import make_resource_fixture, make_template_fixture
 
 pod_with_pvc = make_resource_fixture("pod_with_pvc")
 pvc = make_resource_fixture("pvc")
+pvc_per_node = make_template_fixture("pvc_per_node")
 
 
 def check_default_storage_class(kube):
@@ -46,5 +48,40 @@ def test_create_pod_with_pvc(kube, pod_with_pvc):
     pod = pod_with_pvc[0]
     kube.wait_for_jsonpath(pod, "status.phase", "Running")
 
-def test_create_pod_per_node_with_pvc(kube, pod_with_pvc):
-    pass
+
+@pytest.mark.allnodes
+def test_create_pod_per_node_with_pvc(kube, pvc_per_node, record_property):
+    nodes = kube.get_worker_nodes()
+    specs = []
+    for node in nodes:
+        specs.extend(list(pvc_per_node(node=node.metadata.name)))
+
+    with kube.manage(specs) as objects, concurrent.futures.ThreadPoolExecutor() as pool:
+        tasks = []
+        failed = 0
+        for obj in objects:
+            if obj.kind != "Pod":
+                continue
+
+            tasks.append(
+                pool.submit(
+                    kube.wait_for_jsonpath,
+                    obj,
+                    "status.phase",
+                    "Running",
+                    timeout=120,
+                )
+            )
+
+        for task in concurrent.futures.as_completed(tasks):
+            # If kube.wait_for_jsonpath raised an exception, it
+            # will be visible here.
+            try:
+                pod = task.result()
+            except TimeoutError as err:
+                msg, pod = err.args
+                record_property(pod.metadata.name, "failed")
+                failed += 1
+
+    if failed > 0:
+        pytest.fail("Some pods were unable to bind PVCs.")
