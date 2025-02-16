@@ -1,7 +1,6 @@
 import datetime
 import random
 import string
-import subprocess
 import tempfile
 from pathlib import Path
 
