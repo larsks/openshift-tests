@@ -3,9 +3,9 @@ kind: Pod
 metadata:
   name: "test-gpu-{{testid}}-{{node}}"
   labels:
-    app: openshift-tests
-    testsuite: "{{ testid }}"
-    testname: "{{ testname }}"
+{% filter indent(4) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
 spec:
   restartPolicy: Never
   nodeSelector:

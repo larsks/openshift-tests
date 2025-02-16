@@ -137,15 +137,15 @@ class KubeHelper:
         return nodes.items
 
 
-def make_template_fixture(basename):
+def make_template_fixture(basename,):
     """Given a template name, return a function that when called
     will render the template."""
 
-    def func(kube, manifests, testid, testimage):
+    def func(kube, manifests, testid, testimage, request):
         def render_template(**kwargs):
             tmpl = manifests.get_template(f"{basename}.yaml")
             return yaml.safe_load_all(
-                tmpl.render(testid=testid, testimage=testimage, **kwargs)
+                tmpl.render(testid=testid, testimage=testimage, testname=request.node.originalname, **kwargs)
             )
 
         return render_template
@@ -158,11 +158,11 @@ def make_resource_fixture(basename, **kwargs):
     objects, and return them to the caller. Clean up all the objects when the
     test is complete."""
 
-    def func(kube, manifests, testid, testimage):
+    def func(kube, manifests, testid, testimage, request):
         template = manifests.get_template(f"{basename}.yaml")
         with kube.manage(
             yaml.safe_load_all(
-                template.render(testid=testid, testimage=testimage, **kwargs)
+                template.render(testid=testid, testimage=testimage, testname=request.node.originalname, **kwargs)
             )
         ) as objects:
             yield objects

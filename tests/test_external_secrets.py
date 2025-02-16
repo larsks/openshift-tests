@@ -48,7 +48,7 @@ def test_vault_access(kube, vault_check, testid, record_property):
                     "Pod",
                     len(nodes),
                     timeout=10,
-                    label_selector=f"app=vault-check,testid={testid}",
+                    label_selector=f"app=openshift-tests,testid={testid},testname=test_vault_access",
                 )
             except TimeoutError as err:
                 pytest.fail(str(err))

@@ -3,7 +3,9 @@ kind: Pod
 metadata:
   name: "test-pod-{{testid}}-{{node}}"
   labels:
-    test: pvc-per-node
+{% filter indent(4) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
 spec:
   nodeSelector:
     kubernetes.io/hostname: "{{node}}"
@@ -28,7 +30,9 @@ kind: PersistentVolumeClaim
 metadata:
   name: "test-volume-{{testid}}-{{node}}"
   labels:
-    test: pvc-per-node
+{% filter indent(4) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
 spec:
   accessModes:
   - ReadWriteOnce

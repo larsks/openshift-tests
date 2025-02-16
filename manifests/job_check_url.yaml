@@ -2,9 +2,18 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: "test-job-{{testid}}"
+  labels:
+{% filter indent(4) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
 spec:
   backoffLimit: 1
   template:
+    metadata:
+      labels:
+{% filter indent(8) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
     spec:
       restartPolicy: Never
       containers:

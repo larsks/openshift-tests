@@ -1,0 +1,3 @@
+app: openshift-tests
+testid: "{{ testid }}"
+testname: "{{ testname }}"

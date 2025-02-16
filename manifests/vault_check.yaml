@@ -3,18 +3,21 @@ kind: DaemonSet
 metadata:
   name: "vault-check-{{ testid }}"
   labels:
-    app: "vault-check"
-    testid: "{{ testid }}"
+{% filter indent(4) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
 spec:
   selector:
     matchLabels:
-      app: "vault-check"
-      testid: "{{ testid }}"
+{% filter indent(6) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
   template:
     metadata:
       labels:
-        app: "vault-check"
-        testid: "{{ testid }}"
+{% filter indent(8) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
     spec:
       containers:
       - name: check

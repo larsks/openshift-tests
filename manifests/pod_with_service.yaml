@@ -2,7 +2,9 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    app: pod_with_service
+{% filter indent(4) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
   name: "test-pod-{{testid}}"
 spec:
   containers:
@@ -17,12 +19,15 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: pod_with_service
+{% filter indent(4) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
   name: "test-pod-{{testid}}"
 spec:
   ports:
   - port: 8080
     targetPort: http
   selector:
-    testid: "{{ testid }}"
-    app: pod_with_service
+{% filter indent(4) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}

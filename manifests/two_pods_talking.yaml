@@ -2,22 +2,27 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: pod_with_service
+{% filter indent(4) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
   name: "test-service-{{ testid }}"
 spec:
   ports:
   - port: 8080
     targetPort: http
   selector:
-    app: pod_with_service
-    testid: "{{ testid }}"
+{% filter indent(4) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
     component: server
 ---
 apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    app: pod_with_service
+{% filter indent(4) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
     component: server
   name: "test-pod1-{{ testid }}"
 spec:
@@ -32,7 +37,9 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    app: pod_with_service
+{% filter indent(4) %}
+{% include "common_labels.yaml" %}
+{% endfilter %}
   name: "test-pod2-{{ testid }}"
 spec:
   containers:
@@ -46,4 +53,3 @@ spec:
         - "http://test-service-{{ testid }}:8080"
       initialDelaySeconds: 5
       periodSeconds: 1
-
