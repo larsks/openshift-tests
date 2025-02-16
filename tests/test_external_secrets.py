@@ -5,6 +5,8 @@ import pytest
 from tests.helpers import ResourceNotFoundError
 from tests.helpers import assert_conditions
 from tests.helpers import make_template_fixture
+from tests.helpers import get_condition
+from tests.helpers import get_conditions
 
 vault_check = make_template_fixture("vault_check")
 
@@ -92,14 +94,12 @@ def test_secretstores(kube, record_property):
     if not stores.items:
         pytest.skip("There are no SecretStore resources")
     for store in stores.items:
-        record_property(
-            f"{store.metadata.namespace}:{store.metadata.name}",
-            next(
-                condition.status
-                for condition in store.status.conditions
-                if condition.type == "Ready"
-            ),
-        )
+        ready = get_condition(store, "Ready")
+        if ready.status != "True":
+            record_property(
+                f"{store.metadata.name}",
+                f"{ready.reason}: {ready.message}",
+            )
         assert_conditions(store, {"Ready": "True"})
 
 
@@ -112,12 +112,10 @@ def test_clustersecretstores(kube, record_property):
     if not stores.items:
         pytest.skip("There are no ClusterSecretStore resources")
     for store in stores.items:
-        record_property(
-            f"{store.metadata.name}",
-            next(
-                condition.status
-                for condition in store.status.conditions
-                if condition.type == "Ready"
-            ),
-        )
+        ready = get_condition(store, "Ready")
+        if ready.status != "True":
+            record_property(
+                f"{store.metadata.name}",
+                f"{ready.reason}: {ready.message}",
+            )
         assert_conditions(store, {"Ready": "True"})

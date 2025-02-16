@@ -136,7 +136,6 @@ class KubeHelper:
 
         return nodes.items
 
-
 def make_template_fixture(basename,):
     """Given a template name, return a function that when called
     will render the template."""
@@ -179,3 +178,12 @@ def assert_conditions(obj, conditionMap):
             assert (
                 condition.status == conditionMap[condition.type]
             ), f"{obj.kind} {obj.metadata.name} condition {condition.type} is {condition.status}: {condition.message}"
+
+def get_conditions(obj):
+    return {condition['type']: condition for condition in obj.status.conditions}
+
+
+def get_condition(obj, ctype):
+    return get_conditions(obj)[ctype]
+
+
