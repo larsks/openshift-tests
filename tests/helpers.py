@@ -1,27 +1,11 @@
 import time
+from contextlib import contextmanager
 
 import jsonpath_ng as jsonpath
+import pytest
 import yaml
 from kubernetes import client, dynamic
-import pytest
-
 from kubernetes.dynamic.exceptions import ResourceNotFoundError  # noqa
-
-
-class ObjectManager:
-    def __init__(self, kube, specs):
-        self.kube = kube
-        self.specs = specs
-        self.objects = self.kube.create_objects(self.specs)
-
-    def __getitem__(self, i):
-        return self.objects[i]
-
-    def __enter__(self):
-        return self.objects
-
-    def __exit__(self, *args):
-        self.kube.delete_objects(self.objects)
 
 
 class KubeHelper:
@@ -32,6 +16,13 @@ class KubeHelper:
         self.namespace = namespace
         self.apiclient = client.ApiClient()
         self.dynclient = dynamic.DynamicClient(self.apiclient)
+
+    @contextmanager
+    def manage(self, specs):
+        """Create objects from specs, return the objects, then delete them when the context closes."""
+        objects = self.create_objects(specs)
+        yield objects
+        self.delete_objects(objects)
 
     def resource_for_obj(self, obj):
         """Return a `Resource` for the given object. This is used by the dynamic client
@@ -117,6 +108,7 @@ class KubeHelper:
         return obj
 
     def wait_for_n_objects(self, api_version, kind, count, timeout=30, **kwargs):
+        """Poll until there are count kind objects, or until we exceed the timeout"""
         t_start = time.time()
         while True:
             objs = self.get(api_version, kind, **kwargs)
@@ -125,10 +117,13 @@ class KubeHelper:
 
             if time.time() - t_start > timeout:
                 raise TimeoutError(
-                    f'expected {count} objects of type {kind}, but found {len(objs.items)}'
+                    f"expected {count} objects of type {kind}, but found {len(objs.items)}"
                 )
 
     def get_worker_nodes(self):
+        """Get "worker nodes" -- that is, nodes on which we can schedule user
+        workloads. In a minimal cluster, this will actually be the control
+        plane nodes."""
         nodes = self.get("v1", "Node", label_selector="node-role.kubernetes.io/worker")
         if not nodes.items:
             nodes = self.get(
@@ -143,19 +138,14 @@ class KubeHelper:
 
 
 def make_template_fixture(basename):
-    """Given a template name, return a function that, when called, will render
-    the template (passing in any keyword parameters), create the corresponding
-    objects in Kubernetes, and return an ObjectManager for the resulting
-    objects."""
+    """Given a template name, return a function that when called
+    will render the template."""
 
     def func(kube, manifests, testid, testimage):
         def render_template(**kwargs):
             tmpl = manifests.get_template(f"{basename}.yaml")
-            return ObjectManager(
-                kube,
-                yaml.safe_load_all(
-                    tmpl.render(testid=testid, testimage=testimage, **kwargs)
-                ),
+            return yaml.safe_load_all(
+                tmpl.render(testid=testid, testimage=testimage, **kwargs)
             )
 
         return render_template
@@ -165,16 +155,17 @@ def make_template_fixture(basename):
 
 def make_resource_fixture(basename, **kwargs):
     """Given a template name, render the template, create the corresponding
-    objects, and return an ObjectManager for the objects."""
+    objects, and return them to the caller. Clean up all the objects when the
+    test is complete."""
 
     def func(kube, manifests, testid, testimage):
         template = manifests.get_template(f"{basename}.yaml")
-        return ObjectManager(
-            kube,
+        with kube.manage(
             yaml.safe_load_all(
                 template.render(testid=testid, testimage=testimage, **kwargs)
-            ),
-        )
+            )
+        ) as objects:
+            yield objects
 
     return pytest.fixture(func)
 
