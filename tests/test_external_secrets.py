@@ -43,43 +43,17 @@ def test_vault_access(kube, vault_check, testid, worker_nodes, record_property):
     for url in urls:
         with kube.manage(vault_check(url=url)):
             # wait for number of pods == number of nodes
-            try:
-                pods = kube.wait_for_n_objects(
-                    "v1",
-                    "Pod",
-                    len(worker_nodes),
-                    timeout=10,
-                    label_selector=f"app=openshift-tests,testid={testid},testname=test_vault_access",
-                )
-            except TimeoutError as err:
-                pytest.fail(str(err))
+            pods = kube.wait_for_n_objects(
+                "v1",
+                "Pod",
+                len(worker_nodes),
+                timeout=10,
+                label_selector=f"app=openshift-tests,testid={testid},testname=test_vault_access",
+            )
 
-            # wait for pods to become ready
-            failed = 0
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                tasks = []
-                for pod in pods.items:
-                    tasks.append(
-                        pool.submit(
-                            kube.wait_for_jsonpath,
-                            pod,
-                            "status.containerStatuses[0].ready",
-                            True,
-                        )
-                    )
-
-                for task in concurrent.futures.as_completed(tasks):
-                    # If kube.wait_for_jsonpath raised an exception, it
-                    # will be visible here.
-                    try:
-                        pod = task.result()
-                    except TimeoutError as err:
-                        msg, pod = err.args
-                        record_property(f"{pod.metadata.name} (on {pod.spec.nodeName})", "failed")
-                        failed += 1
-
-            if failed:
-                pytest.fail("Some pods were unable to reach the vault.")
+            kube.wait_for_jsonpath_all(
+                pods.items, "status.containerStatuses[0].ready", True
+            )
 
 
 def test_secretstores(kube, record_property):

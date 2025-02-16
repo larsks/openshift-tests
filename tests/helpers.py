@@ -1,4 +1,5 @@
 import time
+import concurrent.futures
 from contextlib import contextmanager
 
 import jsonpath_ng as jsonpath
@@ -108,12 +109,26 @@ class KubeHelper:
             if time.time() - t_start > timeout:
                 raise TimeoutError(
                     f'expression {expr} for {obj.kind} "{obj.metadata.name}" failed to reach value {value}',
-                    obj,
                 )
 
             time.sleep(1)
 
         return obj
+
+    def wait_for_jsonpath_all(self, objects, expr_raw, value, timeout=30):
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            tasks = [
+                pool.submit(
+                    self.wait_for_jsonpath,
+                    obj,
+                    expr_raw,
+                    value,
+                )
+                for obj in objects
+            ]
+
+            for task in concurrent.futures.as_completed(tasks):
+                task.result()
 
     def wait_for_n_objects(self, api_version, kind, count, timeout=30, **kwargs):
         """Poll until there are count kind objects, or until we exceed the timeout"""
@@ -144,7 +159,10 @@ class KubeHelper:
 
         return nodes.items
 
-def make_template_fixture(basename,):
+
+def make_template_fixture(
+    basename,
+):
     """Given a template name, return a function that when called
     will render the template."""
 
@@ -152,7 +170,12 @@ def make_template_fixture(basename,):
         def render_template(**kwargs):
             tmpl = manifests.get_template(f"{basename}.yaml")
             return yaml.safe_load_all(
-                tmpl.render(testid=testid, testimage=testimage, testname=request.node.originalname, **kwargs)
+                tmpl.render(
+                    testid=testid,
+                    testimage=testimage,
+                    testname=request.node.originalname,
+                    **kwargs,
+                )
             )
 
         return render_template
@@ -169,7 +192,12 @@ def make_resource_fixture(basename, **kwargs):
         template = manifests.get_template(f"{basename}.yaml")
         with kube.manage(
             yaml.safe_load_all(
-                template.render(testid=testid, testimage=testimage, testname=request.node.originalname, **kwargs)
+                template.render(
+                    testid=testid,
+                    testimage=testimage,
+                    testname=request.node.originalname,
+                    **kwargs,
+                )
             )
         ) as objects:
             yield objects
@@ -187,11 +215,10 @@ def assert_conditions(obj, conditionMap):
                 condition.status == conditionMap[condition.type]
             ), f"{obj.kind} {obj.metadata.name} condition {condition.type} is {condition.status}: {condition.message}"
 
+
 def get_conditions(obj):
-    return {condition['type']: condition for condition in obj.status.conditions}
+    return {condition["type"]: condition for condition in obj.status.conditions}
 
 
 def get_condition(obj, ctype):
     return get_conditions(obj)[ctype]
-
-
