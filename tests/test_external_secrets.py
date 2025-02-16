@@ -75,7 +75,7 @@ def test_vault_access(kube, vault_check, testid, worker_nodes, record_property):
                         pod = task.result()
                     except TimeoutError as err:
                         msg, pod = err.args
-                        record_property(pod.spec.nodeName, "failed")
+                        record_property(f"{pod.metadata.name} (on {pod.spec.nodeName})", "failed")
                         failed += 1
 
             if failed:
