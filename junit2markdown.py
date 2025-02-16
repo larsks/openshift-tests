@@ -48,7 +48,7 @@ def passed(tests):
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--only-failures", "-f", action="store_true")
-    p.add_argument("--no-properties", "-p", dest='show_properties', default=True, action='store_false')
+    p.add_argument("--properties", "-p", dest='show_properties', default=False, action='store_true')
     p.add_argument("--output", "-o")
     p.add_argument("results")
     return p.parse_args()
