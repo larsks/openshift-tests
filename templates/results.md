@@ -1,3 +1,4 @@
+{% import "macros" as macros %}
 # Test results
 
 Test run at: {{ testsuite['@timestamp'] }}
@@ -6,24 +7,38 @@ Test run at: {{ testsuite['@timestamp'] }}
 
 | Total | Passed | Skipped | Failed | Errors |
 |-------|--------|---------|--------|--------|
-| {{testsuite['@tests']}} | {{testsuite['@tests']|int - testsuite['@skipped']|int - testsuite['@failures']|int - testsuite['@errors']|int}} | {{testsuite['@skipped']}} | {{testsuite['@failures']}} | {{testsuite['@errors']}} |
+| {{testsuite['@tests']}} | {{tests_passed|length}} | {{ tests_skipped|length }} | {{tests_failure|length}} | {{tests_error|length}} |
 
+{% if tests_failure %}
 ## Failed
 
-{% for testcase in testsuite.testcase|failed -%}
-{% include "testcase.md" %}
+{% for testcase in tests_failure -%}
+{{ macros.testcase_result(":red_circle:", testcase, show_properties) }}
 {%- endfor -%}
+{% endif %}
 
 {% if not only_failures %}
+{% if tests_skipped %}
 ## Skipped
 
-{% for testcase in testsuite.testcase|skipped -%}
-{% include "testcase.md" %}
+{% for testcase in tests_skipped -%}
+{{ macros.testcase_result(":orange_circle:", testcase, show_properties) }}
 {%- endfor -%}
+{% endif %}
 
+{% if tests_passed %}
 ## Passed
 
-{% for testcase in testsuite.testcase|passed -%}
-{% include "testcase.md" %}
+{% for testcase in tests_passed -%}
+{{ macros.testcase_result(":green_circle:", testcase, show_properties) }}
 {%- endfor -%}
+{% endif %}
+
+{% if tests_error %}
+## Errors
+
+{% for testcase in testsuite.testcase|errored -%}
+{{ macros.testcase_result(":black_circle:", testcase, show_properties) }}
+{%- endfor -%}
+{% endif %}
 {% endif %}

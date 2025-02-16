@@ -1,4 +1,5 @@
-- {{ testcase|style_name }}
+{% macro testcase_result(marker, testcase, show_properties) %}
+- {{ marker }} {{ testcase|style_name }}
 {% if testcase|message %}
 
   {{ testcase|message|wordwrap(75)|indent(2) }}
@@ -11,5 +12,4 @@
   | {{ property['@name'] }} | {{ property['@value'] }} |
 {% endfor %}
 {% endif %}
-
-
+{% endmacro %}
