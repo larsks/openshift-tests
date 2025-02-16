@@ -21,10 +21,13 @@ def test_create_pod_with_service(kube, pod_with_service):
     kube.wait_for_jsonpath(endpoints, "subsets[0].ports[0].port", 8080)
 
 
-def test_pod_external_connectivity(kube, job_check_url):
+def test_pod_external_connectivity(kube, job_check_url, testid):
     """Test that a pod can reach an outside endpoint."""
-    job = job_check_url[0]
-    kube.wait_for_jsonpath(job, "status.succeeded", 1)
+    try:
+        job = job_check_url[0]
+        kube.wait_for_jsonpath(job, "status.succeeded", 1)
+    finally:
+        kube.delete_gkv('v1', 'Pod', label_selector=f'testid={testid},testname=test_pod_external_connectivity')
 
 
 def test_two_pods_talking(kube, two_pods_talking):
