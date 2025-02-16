@@ -21,8 +21,10 @@ class KubeHelper:
     def manage(self, specs):
         """Create objects from specs, return the objects, then delete them when the context closes."""
         objects = self.create_objects(specs)
-        yield objects
-        self.delete_objects(objects)
+        try:
+            yield objects
+        finally:
+            self.delete_objects(objects)
 
     def resource_for_obj(self, obj):
         """Return a `Resource` for the given object. This is used by the dynamic client
