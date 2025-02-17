@@ -37,7 +37,7 @@ Test run at: {{ testsuite['@timestamp'] }}
 {% if tests_error %}
 ## Errors
 
-{% for testcase in testsuite.testcase|errored -%}
+{% for testcase in tests_error -%}
 {{ macros.testcase_result(":black_circle:", testcase, show_properties) }}
 {%- endfor -%}
 {% endif %}
