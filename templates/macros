@@ -9,7 +9,7 @@
   | Property | Value |
   |----------|-------|
 {% for property in testcase['properties'].get('property', []) %}
-  | {{ property['@name'] }} | {{ property['@value'] }} |
+  | {{ property['@name'] }} | {{ property['@value'].replace("\n", " ") }} |
 {% endfor %}
 {% endif %}
 {% endmacro %}
