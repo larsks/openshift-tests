@@ -4,7 +4,7 @@ from tests.helpers import assert_conditions
 from tests.helpers import ResourceNotFoundError
 
 
-def test_cluster_operators(kube):
+def test_cluster_operators(kube, record_property):
     """Test that all cluster operators are healthy"""
     conditionMap = {
         "Degraded": "False",
@@ -14,7 +14,16 @@ def test_cluster_operators(kube):
     }
     try:
         ops = kube.get("config.openshift.io/v1", "ClusterOperator")
-    except  ResourceNotFoundError:
+    except ResourceNotFoundError:
         pytest.skip("This cluster does not have cluster operators.")
+
+    failed = 0
     for op in ops.items:
-        assert_conditions(op, conditionMap)
+        try:
+            assert_conditions(op, conditionMap)
+        except AssertionError as err:
+            record_property(f"{op.metadata.name}", str(err))
+            failed += 1
+
+    if failed:
+        pytest.fail("Some cluster operators are unhealthy")
